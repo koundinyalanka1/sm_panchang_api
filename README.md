@@ -109,6 +109,7 @@ The response uses the final Phase 5 contract:
     "vara": "Shanivara",
     "nakshatra": "Shravana",
     "nakshatra_end_time": "11:25 PM",
+    "next_nakshatra": "Dhanishta",
     "yoga": "Shukla",
     "yoga_end_time": "02:35 AM (Next Day)",
     "next_yoga": "Brahma",

@@ -176,6 +176,11 @@ def calculate_nakshatra_index(moon_longitude: float) -> int:
     return _one_based_index(moon_longitude % 360.0, 360.0 / 27.0, 27)
 
 
+def get_next_nakshatra_name(nakshatra_index: int) -> str:
+    _validate_one_based_index(nakshatra_index, len(NAKSHATRA_NAMES), "Nakshatra")
+    return NAKSHATRA_NAMES[nakshatra_index % len(NAKSHATRA_NAMES)]
+
+
 def calculate_yoga(sun_longitude: float, moon_longitude: float) -> str:
     return YOGA_NAMES[calculate_yoga_index(sun_longitude, moon_longitude) - 1]
 

@@ -95,6 +95,7 @@ class PanchangLimbsResponse(StrictBaseModel):
     vara: str
     nakshatra: str
     nakshatra_end_time: str
+    next_nakshatra: str
     yoga: str
     yoga_end_time: str
     next_yoga: str

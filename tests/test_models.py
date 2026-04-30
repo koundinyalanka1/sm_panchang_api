@@ -14,6 +14,7 @@ class ModelContractTests(TestCase):
             vara="Shanivara",
             nakshatra="Shravana",
             nakshatra_end_time="09:22 AM",
+            next_nakshatra="Dhanishta",
             yoga="Shukla",
             yoga_end_time="11:40 AM",
             next_yoga="Brahma",
@@ -24,6 +25,7 @@ class ModelContractTests(TestCase):
 
         self.assertEqual(response.next_tithi, "Krishna Ashtami")
         self.assertEqual(response.nakshatra_end_time, "09:22 AM")
+        self.assertEqual(response.next_nakshatra, "Dhanishta")
         self.assertEqual(response.yoga_end_time, "11:40 AM")
         self.assertEqual(response.next_yoga, "Brahma")
         self.assertEqual(response.karana_end_time, "02:03 PM")

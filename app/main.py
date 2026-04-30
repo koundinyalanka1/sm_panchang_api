@@ -22,10 +22,12 @@ from app.services.calendrical import calculate_calendrical_elements
 from app.services.festivals import identify_festivals
 from app.services.panchang import (
     calculate_karana_index,
+    calculate_nakshatra_index,
     calculate_panchang_limbs,
     calculate_tithi_index,
     calculate_yoga_index,
     get_next_karana_name,
+    get_next_nakshatra_name,
     get_next_tithi_with_paksha,
     get_next_yoga_name,
 )
@@ -96,6 +98,7 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
             sun_longitude=result.sun.sidereal_longitude,
             moon_longitude=result.moon.sidereal_longitude,
         )
+        nakshatra_index = calculate_nakshatra_index(result.moon.sidereal_longitude)
         karana_index = calculate_karana_index(
             sun_longitude=result.sun.sidereal_longitude,
             moon_longitude=result.moon.sidereal_longitude,
@@ -166,6 +169,7 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
             vara=panchang.vara,
             nakshatra=panchang.nakshatra,
             nakshatra_end_time=_format_clock_time(nakshatra_end_local, request.date),
+            next_nakshatra=get_next_nakshatra_name(nakshatra_index),
             yoga=panchang.yoga,
             yoga_end_time=_format_clock_time(yoga_end_local, request.date),
             next_yoga=get_next_yoga_name(yoga_index),

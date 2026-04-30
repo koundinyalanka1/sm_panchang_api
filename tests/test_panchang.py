@@ -7,6 +7,7 @@ from app.services.panchang import (
     calculate_karana,
     calculate_karana_index,
     calculate_nakshatra,
+    calculate_nakshatra_index,
     calculate_panchang_limbs,
     calculate_tithi,
     calculate_tithi_index,
@@ -15,6 +16,7 @@ from app.services.panchang import (
     calculate_yoga,
     calculate_yoga_index,
     get_next_karana_name,
+    get_next_nakshatra_name,
     get_next_tithi_with_paksha,
     get_next_yoga_name,
 )
@@ -53,6 +55,13 @@ class PanchangCalculationTests(TestCase):
         self.assertEqual(get_next_karana_name(1), "Bava")
         self.assertEqual(get_next_karana_name(57), "Shakuni")
         self.assertEqual(get_next_karana_name(60), "Kimstughna")
+
+    def test_calculates_nakshatra_index_and_next_name(self) -> None:
+        self.assertEqual(calculate_nakshatra_index(0.0), 1)
+        self.assertEqual(calculate_nakshatra_index(359.999999), 27)
+        self.assertEqual(get_next_nakshatra_name(1), "Bharani")
+        self.assertEqual(get_next_nakshatra_name(22), "Dhanishta")
+        self.assertEqual(get_next_nakshatra_name(27), "Ashwini")
 
     def test_maps_nakshatra_boundaries(self) -> None:
         self.assertEqual(calculate_nakshatra(0.0), "Ashwini")
