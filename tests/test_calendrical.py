@@ -60,6 +60,52 @@ class CalendricalCalculationTests(TestCase):
         self.assertEqual(calculate_masa(355.0, "Krishna", "PURNIMANTA"), "Vaisakha")
         self.assertEqual(calculate_masa(5.0, "Krishna", "PURNIMANTA"), "Jyeshtha")
 
+    def test_calculates_purnimanta_krishna_masa_from_next_lunation(self) -> None:
+        elements = calculate_calendrical_elements(
+            civil_date=date(2026, 5, 9),
+            sunrise_jd_ut=2461169.512180298,
+            sun_longitude=24.181935403045713,
+            tithi_index=22,
+            new_moon_sun_longitude=3.0,
+            next_new_moon_sun_longitude=34.0,
+            following_new_moon_sun_longitude=65.0,
+            chaitra_new_moon_jd_ut=2461120.0,
+            month_convention="PURNIMANTA",
+        )
+
+        self.assertEqual(elements.masa, "Jyeshtha")
+        self.assertFalse(elements.is_adhika_masa)
+        self.assertEqual(elements.paksha, "Krishna")
+
+    def test_calculates_purnimanta_krishna_adhika_status_from_next_lunation(self) -> None:
+        elements_before_adhika_new_moon = calculate_calendrical_elements(
+            civil_date=date(2026, 5, 9),
+            sunrise_jd_ut=2461169.512180298,
+            sun_longitude=24.181935403045713,
+            tithi_index=22,
+            new_moon_sun_longitude=3.0,
+            next_new_moon_sun_longitude=34.0,
+            following_new_moon_sun_longitude=59.0,
+            chaitra_new_moon_jd_ut=2461120.0,
+            month_convention="PURNIMANTA",
+        )
+        elements_before_regular_new_moon = calculate_calendrical_elements(
+            civil_date=date(2026, 6, 9),
+            sunrise_jd_ut=2461200.512180298,
+            sun_longitude=54.18193540304571,
+            tithi_index=22,
+            new_moon_sun_longitude=34.0,
+            next_new_moon_sun_longitude=59.0,
+            following_new_moon_sun_longitude=91.0,
+            chaitra_new_moon_jd_ut=2461120.0,
+            month_convention="PURNIMANTA",
+        )
+
+        self.assertEqual(elements_before_adhika_new_moon.masa, "Adhika Jyeshtha")
+        self.assertTrue(elements_before_adhika_new_moon.is_adhika_masa)
+        self.assertEqual(elements_before_regular_new_moon.masa, "Jyeshtha")
+        self.assertFalse(elements_before_regular_new_moon.is_adhika_masa)
+
     def test_calculates_adhika_masa_flag_and_prefix(self) -> None:
         self.assertTrue(calculate_is_adhika_masa(45.0, 59.0))
         self.assertFalse(calculate_is_adhika_masa(45.0, 61.0))

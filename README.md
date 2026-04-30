@@ -138,8 +138,9 @@ python scripts/smoke_panchang.py
 - Paksha is derived from the 1-based Tithi index.
 - Tithi end time is found by bracketing and bisecting the next 12-degree lunar elongation boundary.
 - Ayana and Rutuvu are derived from the Sun's sidereal longitude at sunrise.
-- Masa is derived from the Sun's sidereal Rasi at the exact previous New Moon; Purnimanta Krishna Paksha shifts the Amanta month forward by one.
-- Adhika Masa is true when the Sun's Rasi is the same at the previous and next New Moons; the displayed Masa is prefixed with `Adhika `.
+- Amanta Masa is derived from the Sun's sidereal Rasi at the exact previous New Moon.
+- Purnimanta Shukla Paksha uses the same lunation as Amanta; Purnimanta Krishna Paksha is anchored to the next New Moon lunation so month names, skipped months, and Adhika Masa are convention-aware.
+- Adhika Masa is true when the Sun's Rasi is the same at the pair of New Moons that define the displayed Masa; the displayed Masa is prefixed with `Adhika `.
 - Samvatsara uses the Saka year and the Chaitra Shukla Pratipada anchor found from the Chaitra New Moon.
 - Festivals are looked up from the final Masa, Paksha, and bare Tithi name; Adhika Masa always returns `[]`.
 - Longitude input is east-positive, matching Swiss Ephemeris geographic coordinates.

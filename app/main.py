@@ -12,6 +12,7 @@ from app.models import (
     AstronomicalResponse,
     CalendricalResponse,
     LocationResponse,
+    MonthConvention,
     PanchangRequest,
     PanchangLimbsResponse,
     PanchangResponse,
@@ -89,6 +90,15 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
         _tithi_end_utc, tithi_end_local = service.from_julian_day_ut(tithi_end_jd, request.timezone)
         new_moon_sun = service.get_sidereal_longitude(CelestialBody.SUN, previous_new_moon_jd)
         next_new_moon_sun = service.get_sidereal_longitude(CelestialBody.SUN, next_new_moon_jd)
+        following_new_moon_sun_longitude = None
+        if request.preferences.month_convention == MonthConvention.PURNIMANTA:
+            following_new_moon_jd = service.find_next_new_moon(next_new_moon_jd + 1.0)
+            following_new_moon_sun = service.get_sidereal_longitude(
+                CelestialBody.SUN,
+                following_new_moon_jd,
+            )
+            following_new_moon_sun_longitude = following_new_moon_sun.sidereal_longitude
+
         chaitra_new_moon_jd = service.find_chaitra_new_moon(request.date.year, request.timezone)
         calendrical = calculate_calendrical_elements(
             civil_date=request.date,
@@ -99,12 +109,14 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
             next_new_moon_sun_longitude=next_new_moon_sun.sidereal_longitude,
             chaitra_new_moon_jd_ut=chaitra_new_moon_jd,
             month_convention=request.preferences.month_convention,
+            following_new_moon_sun_longitude=following_new_moon_sun_longitude,
         )
         festivals = identify_festivals(
             masa=calendrical.masa,
             paksha=calendrical.paksha,
             tithi=panchang.tithi,
             is_adhika_masa=calendrical.is_adhika_masa,
+            month_convention=request.preferences.month_convention,
         )
     except (AstronomyCalculationError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
