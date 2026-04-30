@@ -108,6 +108,14 @@ REPEATING_KARANA_NAMES = [
     "Vishti",
 ]
 
+KARANA_NAMES = [
+    "Kimstughna",
+    *(REPEATING_KARANA_NAMES * 8),
+    "Shakuni",
+    "Chatushpada",
+    "Naga",
+]
+
 VARA_NAMES = {
     0: "Somavara",
     1: "Mangalavara",
@@ -173,19 +181,12 @@ def calculate_yoga(sun_longitude: float, moon_longitude: float) -> str:
 
 
 def calculate_karana(sun_longitude: float, moon_longitude: float) -> str:
+    return KARANA_NAMES[calculate_karana_index(sun_longitude, moon_longitude) - 1]
+
+
+def calculate_karana_index(sun_longitude: float, moon_longitude: float) -> int:
     angle = (moon_longitude - sun_longitude) % 360.0
-    karana_index = _one_based_index(angle, 6.0, 60)
-
-    if karana_index == 1:
-        return "Kimstughna"
-    if karana_index == 58:
-        return "Shakuni"
-    if karana_index == 59:
-        return "Chatushpada"
-    if karana_index == 60:
-        return "Naga"
-
-    return REPEATING_KARANA_NAMES[(karana_index - 2) % len(REPEATING_KARANA_NAMES)]
+    return _one_based_index(angle, 6.0, 60)
 
 
 def _one_based_index(angle: float, arc_degrees: float, total_segments: int) -> int:

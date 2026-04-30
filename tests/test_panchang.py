@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from app.services.panchang import (
     calculate_karana,
+    calculate_karana_index,
     calculate_nakshatra,
     calculate_panchang_limbs,
     calculate_tithi,
@@ -49,6 +50,39 @@ class PanchangCalculationTests(TestCase):
         self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=342.0), "Shakuni")
         self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=348.0), "Chatushpada")
         self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=354.0), "Naga")
+
+    def test_maps_complete_karana_cycle(self) -> None:
+        self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=0.001), "Kimstughna")
+        expected_repeating_karanas = [
+            "Bava",
+            "Balava",
+            "Kaulava",
+            "Taitila",
+            "Gara",
+            "Vanija",
+            "Vishti",
+        ]
+
+        for cycle_start_index in range(2, 58, len(expected_repeating_karanas)):
+            for offset, karana_name in enumerate(expected_repeating_karanas):
+                karana_index = cycle_start_index + offset
+                angle = (karana_index - 1) * 6.0 + 0.001
+                self.assertEqual(
+                    calculate_karana(sun_longitude=0.0, moon_longitude=angle),
+                    karana_name,
+                )
+
+        self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=342.001), "Shakuni")
+        self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=348.001), "Chatushpada")
+        self.assertEqual(calculate_karana(sun_longitude=0.0, moon_longitude=354.001), "Naga")
+
+    def test_calculates_karana_index_boundaries(self) -> None:
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=0.0), 1)
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=5.999999), 1)
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=6.0), 2)
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=341.999999), 57)
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=342.0), 58)
+        self.assertEqual(calculate_karana_index(sun_longitude=0.0, moon_longitude=359.999999), 60)
 
     def test_maps_vara(self) -> None:
         self.assertEqual(calculate_vara(date(2026, 5, 3)), "Bhanuvara")
