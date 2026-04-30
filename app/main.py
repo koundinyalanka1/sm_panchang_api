@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -156,21 +156,21 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
             timezone=request.timezone,
         ),
         astronomical=AstronomicalResponse(
-            sunrise=_format_clock_time(result.sunrise.local_time),
-            sunset=_format_clock_time(result.sunset.local_time),
+            sunrise=_format_clock_time(result.sunrise.local_time, request.date),
+            sunset=_format_clock_time(result.sunset.local_time, request.date),
         ),
         panchang=PanchangLimbsResponse(
             tithi=f"{calendrical.paksha} {panchang.tithi}",
-            tithi_end_time=_format_clock_time(tithi_end_local),
+            tithi_end_time=_format_clock_time(tithi_end_local, request.date),
             next_tithi=get_next_tithi_with_paksha(tithi_index),
             vara=panchang.vara,
             nakshatra=panchang.nakshatra,
-            nakshatra_end_time=_format_clock_time(nakshatra_end_local),
+            nakshatra_end_time=_format_clock_time(nakshatra_end_local, request.date),
             yoga=panchang.yoga,
-            yoga_end_time=_format_clock_time(yoga_end_local),
+            yoga_end_time=_format_clock_time(yoga_end_local, request.date),
             next_yoga=get_next_yoga_name(yoga_index),
             karana=panchang.karana,
-            karana_end_time=_format_clock_time(karana_end_local),
+            karana_end_time=_format_clock_time(karana_end_local, request.date),
             next_karana=get_next_karana_name(karana_index),
         ),
         calendrical=CalendricalResponse(
@@ -188,6 +188,11 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
 calculate_phase1_astronomy = calculate_panchang
 
 
-def _format_clock_time(moment: datetime) -> str:
+def _format_clock_time(moment: datetime, reference_date: date | None = None) -> str:
     rounded = moment + timedelta(seconds=30)
-    return rounded.strftime("%I:%M %p")
+    formatted_time = rounded.strftime("%I:%M %p")
+
+    if reference_date is not None and rounded.date() > reference_date:
+        return f"{formatted_time} (Next Day)"
+
+    return formatted_time
