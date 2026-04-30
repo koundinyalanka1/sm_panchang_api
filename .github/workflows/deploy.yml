@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  GCP_PROJECT_ID: YOUR_PROJECT_ID
+  GCP_PROJECT_ID: stotramitra-8fad0
   GCP_REGION: asia-south1
   CLOUD_RUN_SERVICE: panchang-api
 
