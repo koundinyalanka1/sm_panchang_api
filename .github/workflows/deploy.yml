@@ -9,6 +9,8 @@ env:
   GCP_PROJECT_ID: stotramitra-8fad0
   GCP_REGION: asia-south1
   CLOUD_RUN_SERVICE: panchang-api
+  AR_REPO: cloud-run-source-deploy
+  IMAGE: asia-south1-docker.pkg.dev/stotramitra-8fad0/cloud-run-source-deploy/panchang-api
 
 jobs:
   deploy:
@@ -24,13 +26,37 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Create Artifact Registry repository (if not exists)
+        run: |
+          gcloud artifacts repositories describe ${{ env.AR_REPO }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --location=${{ env.GCP_REGION }} 2>/dev/null || \
+          gcloud artifacts repositories create ${{ env.AR_REPO }} \
+            --repository-format=docker \
+            --location=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.CLOUD_RUN_SERVICE }}
           project_id: ${{ env.GCP_PROJECT_ID }}
           region: ${{ env.GCP_REGION }}
-          source: .
+          image: ${{ env.IMAGE }}:${{ github.sha }}
           env_vars: |
             PANCHANG_API_KEY=${{ secrets.PANCHANG_API_KEY }}
           flags: --allow-unauthenticated
