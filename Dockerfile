@@ -31,8 +31,19 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
     && rm -rf /wheels
 
-# Copy the FastAPI app, scripts, examples, and Swiss Ephemeris data files.
+# Copy the FastAPI app, scripts, and examples (ephe/ is gitignored; fetched below).
 COPY . .
+
+# Download Swiss Ephemeris data files at build time so the image is self-contained.
+# These are not in the repo (gitignored) but are required at runtime.
+RUN mkdir -p /app/ephe \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && wget -q -O /app/ephe/sepl_18.se1 \
+       https://github.com/aloistr/swisseph/raw/master/ephe/sepl_18.se1 \
+    && wget -q -O /app/ephe/semo_18.se1 \
+       https://github.com/aloistr/swisseph/raw/master/ephe/semo_18.se1
 
 # Run as a non-root user for safer production execution.
 RUN useradd --create-home --shell /usr/sbin/nologin appuser \
