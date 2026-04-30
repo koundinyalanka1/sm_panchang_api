@@ -91,10 +91,16 @@ class CalendricalResponse(StrictBaseModel):
 class PanchangLimbsResponse(StrictBaseModel):
     tithi: str
     tithi_end_time: str
+    next_tithi: str
     vara: str
     nakshatra: str
+    nakshatra_end_time: str
     yoga: str
+    yoga_end_time: str
+    next_yoga: str
     karana: str
+    karana_end_time: str
+    next_karana: str
 
 
 class PanchangResponse(StrictBaseModel):

@@ -151,13 +151,12 @@ def calculate_panchang_limbs(
 
 
 def calculate_tithi(sun_longitude: float, moon_longitude: float) -> str:
-    return TITHI_NAMES[calculate_tithi_index(sun_longitude, moon_longitude) - 1]
+    return get_tithi_name(calculate_tithi_index(sun_longitude, moon_longitude))
 
 
 def calculate_tithi_with_paksha(sun_longitude: float, moon_longitude: float) -> str:
     tithi_index = calculate_tithi_index(sun_longitude, moon_longitude)
-    paksha = "Shukla" if tithi_index <= 15 else "Krishna"
-    return f"{paksha} {TITHI_NAMES[tithi_index - 1]}"
+    return get_tithi_with_paksha(tithi_index)
 
 
 def calculate_tithi_index(sun_longitude: float, moon_longitude: float) -> int:
@@ -170,14 +169,20 @@ def calculate_vara(civil_date: date) -> str:
 
 
 def calculate_nakshatra(moon_longitude: float) -> str:
-    nakshatra_index = _one_based_index(moon_longitude % 360.0, 360.0 / 27.0, 27)
-    return NAKSHATRA_NAMES[nakshatra_index - 1]
+    return NAKSHATRA_NAMES[calculate_nakshatra_index(moon_longitude) - 1]
+
+
+def calculate_nakshatra_index(moon_longitude: float) -> int:
+    return _one_based_index(moon_longitude % 360.0, 360.0 / 27.0, 27)
 
 
 def calculate_yoga(sun_longitude: float, moon_longitude: float) -> str:
+    return YOGA_NAMES[calculate_yoga_index(sun_longitude, moon_longitude) - 1]
+
+
+def calculate_yoga_index(sun_longitude: float, moon_longitude: float) -> int:
     angle = (moon_longitude + sun_longitude) % 360.0
-    yoga_index = _one_based_index(angle, 360.0 / 27.0, 27)
-    return YOGA_NAMES[yoga_index - 1]
+    return _one_based_index(angle, 360.0 / 27.0, 27)
 
 
 def calculate_karana(sun_longitude: float, moon_longitude: float) -> str:
@@ -187,6 +192,39 @@ def calculate_karana(sun_longitude: float, moon_longitude: float) -> str:
 def calculate_karana_index(sun_longitude: float, moon_longitude: float) -> int:
     angle = (moon_longitude - sun_longitude) % 360.0
     return _one_based_index(angle, 6.0, 60)
+
+
+def get_next_karana_name(karana_index: int) -> str:
+    _validate_one_based_index(karana_index, len(KARANA_NAMES), "Karana")
+    return KARANA_NAMES[karana_index % len(KARANA_NAMES)]
+
+
+def get_next_tithi_with_paksha(tithi_index: int) -> str:
+    return get_tithi_with_paksha((tithi_index % len(TITHI_NAMES)) + 1)
+
+
+def get_next_yoga_name(yoga_index: int) -> str:
+    _validate_one_based_index(yoga_index, len(YOGA_NAMES), "Yoga")
+    return YOGA_NAMES[yoga_index % len(YOGA_NAMES)]
+
+
+def get_tithi_name(tithi_index: int) -> str:
+    _validate_one_based_index(tithi_index, len(TITHI_NAMES), "Tithi")
+    return TITHI_NAMES[tithi_index - 1]
+
+
+def get_tithi_with_paksha(tithi_index: int) -> str:
+    return f"{get_tithi_paksha(tithi_index)} {get_tithi_name(tithi_index)}"
+
+
+def get_tithi_paksha(tithi_index: int) -> str:
+    _validate_one_based_index(tithi_index, len(TITHI_NAMES), "Tithi")
+    return "Shukla" if tithi_index <= 15 else "Krishna"
+
+
+def _validate_one_based_index(index: int, total_segments: int, segment_name: str) -> None:
+    if not 1 <= index <= total_segments:
+        raise ValueError(f"{segment_name} index must be between 1 and {total_segments}.")
 
 
 def _one_based_index(angle: float, arc_degrees: float, total_segments: int) -> int:

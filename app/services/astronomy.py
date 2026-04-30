@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from enum import Enum
+from typing import Callable
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -139,33 +140,46 @@ class SwissEphemerisAstronomyService:
     def find_tithi_end(self, julian_day_ut: float) -> float:
         self._ensure_swiss_ephemeris_available(julian_day_ut)
 
-        start_angle = self.get_lunar_phase_angle(julian_day_ut)
-        current_tithi_index = int((start_angle % 360.0) // 12.0) + 1
-        target_angle = (current_tithi_index * 12.0) % 360.0
-        target_progress = (target_angle - start_angle) % 360.0
+        return self._find_next_segment_end(
+            julian_day_ut=julian_day_ut,
+            arc_degrees=12.0,
+            angle_provider=self.get_lunar_phase_angle,
+            segment_name="Tithi",
+            max_steps=16,
+        )
 
-        if target_progress <= 1e-10:
-            target_progress = 12.0
+    def find_nakshatra_end(self, julian_day_ut: float) -> float:
+        self._ensure_swiss_ephemeris_available(julian_day_ut)
 
-        lower_jd = julian_day_ut
-        step_days = 0.25
+        return self._find_next_segment_end(
+            julian_day_ut=julian_day_ut,
+            arc_degrees=360.0 / 27.0,
+            angle_provider=self._get_moon_sidereal_angle,
+            segment_name="Nakshatra",
+            max_steps=24,
+        )
 
-        for _step in range(16):
-            upper_jd = lower_jd + step_days
-            upper_progress = self._lunar_phase_progress(julian_day_ut, start_angle, upper_jd)
+    def find_yoga_end(self, julian_day_ut: float) -> float:
+        self._ensure_swiss_ephemeris_available(julian_day_ut)
 
-            if upper_progress >= target_progress:
-                return self._bisect_tithi_end(
-                    lower_jd,
-                    upper_jd,
-                    julian_day_ut,
-                    start_angle,
-                    target_progress,
-                )
+        return self._find_next_segment_end(
+            julian_day_ut=julian_day_ut,
+            arc_degrees=360.0 / 27.0,
+            angle_provider=self._get_yoga_angle,
+            segment_name="Yoga",
+            max_steps=24,
+        )
 
-            lower_jd = upper_jd
+    def find_karana_end(self, julian_day_ut: float) -> float:
+        self._ensure_swiss_ephemeris_available(julian_day_ut)
 
-        raise AstronomyCalculationError("Could not bracket the Tithi end within 4 days.")
+        return self._find_next_segment_end(
+            julian_day_ut=julian_day_ut,
+            arc_degrees=6.0,
+            angle_provider=self.get_lunar_phase_angle,
+            segment_name="Karana",
+            max_steps=16,
+        )
 
     def find_chaitra_new_moon(self, gregorian_year: int, timezone_name: str) -> float:
         search_jd = self.local_datetime_to_julian_day_ut(
@@ -352,17 +366,75 @@ class SwissEphemerisAstronomyService:
             return phase_angle - 360.0
         return phase_angle
 
-    def _bisect_tithi_end(
+    def _get_moon_sidereal_angle(self, julian_day_ut: float) -> float:
+        return self.get_sidereal_longitude(CelestialBody.MOON, julian_day_ut).sidereal_longitude
+
+    def _get_yoga_angle(self, julian_day_ut: float) -> float:
+        longitudes = self.get_sidereal_longitudes(julian_day_ut)
+        return (longitudes.sun.sidereal_longitude + longitudes.moon.sidereal_longitude) % 360.0
+
+    def _find_next_segment_end(
+        self,
+        julian_day_ut: float,
+        arc_degrees: float,
+        angle_provider: Callable[[float], float],
+        segment_name: str,
+        max_steps: int,
+    ) -> float:
+        start_angle = angle_provider(julian_day_ut)
+        current_segment_index = int((start_angle % 360.0) // arc_degrees) + 1
+        target_angle = (current_segment_index * arc_degrees) % 360.0
+        target_progress = (target_angle - start_angle) % 360.0
+
+        if target_progress <= 1e-10:
+            target_progress = arc_degrees
+
+        lower_jd = julian_day_ut
+        step_days = 0.25
+
+        for _step in range(max_steps):
+            upper_jd = lower_jd + step_days
+            upper_progress = self._angle_progress(
+                julian_day_ut,
+                start_angle,
+                upper_jd,
+                angle_provider,
+            )
+
+            if upper_progress >= target_progress:
+                return self._bisect_segment_end(
+                    lower_jd,
+                    upper_jd,
+                    julian_day_ut,
+                    start_angle,
+                    target_progress,
+                    angle_provider,
+                )
+
+            lower_jd = upper_jd
+
+        max_days = max_steps * step_days
+        raise AstronomyCalculationError(
+            f"Could not bracket the {segment_name} end within {max_days:g} days."
+        )
+
+    def _bisect_segment_end(
         self,
         lower_jd: float,
         upper_jd: float,
         start_jd: float,
         start_angle: float,
         target_progress: float,
+        angle_provider: Callable[[float], float],
     ) -> float:
         for _iteration in range(48):
             midpoint_jd = (lower_jd + upper_jd) / 2.0
-            midpoint_progress = self._lunar_phase_progress(start_jd, start_angle, midpoint_jd)
+            midpoint_progress = self._angle_progress(
+                start_jd,
+                start_angle,
+                midpoint_jd,
+                angle_provider,
+            )
 
             if midpoint_progress >= target_progress:
                 upper_jd = midpoint_jd
@@ -371,11 +443,17 @@ class SwissEphemerisAstronomyService:
 
         return (lower_jd + upper_jd) / 2.0
 
-    def _lunar_phase_progress(self, start_jd: float, start_angle: float, julian_day_ut: float) -> float:
+    def _angle_progress(
+        self,
+        start_jd: float,
+        start_angle: float,
+        julian_day_ut: float,
+        angle_provider: Callable[[float], float],
+    ) -> float:
         if julian_day_ut < start_jd:
-            raise ValueError("Lunar phase progress can only be measured forward in time.")
+            raise ValueError("Segment progress can only be measured forward in time.")
 
-        current_angle = self.get_lunar_phase_angle(julian_day_ut)
+        current_angle = angle_provider(julian_day_ut)
         return (current_angle - start_angle) % 360.0
 
     @staticmethod

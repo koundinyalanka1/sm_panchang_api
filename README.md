@@ -105,10 +105,16 @@ The response uses the final Phase 5 contract:
   "panchang": {
     "tithi": "Krishna Saptami",
     "tithi_end_time": "02:03 PM",
+    "next_tithi": "Krishna Ashtami",
     "vara": "Shanivara",
     "nakshatra": "Shravana",
+    "nakshatra_end_time": "11:25 PM",
     "yoga": "Shukla",
-    "karana": "Bava"
+    "yoga_end_time": "02:35 AM",
+    "next_yoga": "Brahma",
+    "karana": "Bava",
+    "karana_end_time": "02:03 PM",
+    "next_karana": "Balava"
   },
   "calendrical": {
     "samvatsara": "Parabhava",
@@ -136,7 +142,7 @@ python scripts/smoke_panchang.py
 - Yoga uses `((Moon + Sun) % 360)`.
 - Nakshatra uses `(Moon % 360)`.
 - Paksha is derived from the 1-based Tithi index.
-- Tithi end time is found by bracketing and bisecting the next 12-degree lunar elongation boundary.
+- Tithi, Nakshatra, Yoga, and Karana end times are found by bracketing and bisecting their next segment boundaries from the sunrise state.
 - Ayana and Rutuvu are derived from the Sun's sidereal longitude at sunrise.
 - Amanta Masa is derived from the Sun's sidereal Rasi at the exact previous New Moon.
 - Purnimanta Shukla Paksha uses the same lunation as Amanta; Purnimanta Krishna Paksha is anchored to the next New Moon lunation so month names, skipped months, and Adhika Masa are convention-aware.

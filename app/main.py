@@ -20,7 +20,15 @@ from app.models import (
 from app.services.astronomy import AstronomyCalculationError, CelestialBody, SwissEphemerisAstronomyService
 from app.services.calendrical import calculate_calendrical_elements
 from app.services.festivals import identify_festivals
-from app.services.panchang import calculate_panchang_limbs, calculate_tithi_index
+from app.services.panchang import (
+    calculate_karana_index,
+    calculate_panchang_limbs,
+    calculate_tithi_index,
+    calculate_yoga_index,
+    get_next_karana_name,
+    get_next_tithi_with_paksha,
+    get_next_yoga_name,
+)
 
 
 app = FastAPI(
@@ -84,10 +92,30 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
             sun_longitude=result.sun.sidereal_longitude,
             moon_longitude=result.moon.sidereal_longitude,
         )
+        yoga_index = calculate_yoga_index(
+            sun_longitude=result.sun.sidereal_longitude,
+            moon_longitude=result.moon.sidereal_longitude,
+        )
+        karana_index = calculate_karana_index(
+            sun_longitude=result.sun.sidereal_longitude,
+            moon_longitude=result.moon.sidereal_longitude,
+        )
         previous_new_moon_jd = service.find_previous_new_moon(result.sunrise.julian_day_ut)
         next_new_moon_jd = service.find_next_new_moon(result.sunrise.julian_day_ut)
         tithi_end_jd = service.find_tithi_end(result.sunrise.julian_day_ut)
+        nakshatra_end_jd = service.find_nakshatra_end(result.sunrise.julian_day_ut)
+        yoga_end_jd = service.find_yoga_end(result.sunrise.julian_day_ut)
+        karana_end_jd = service.find_karana_end(result.sunrise.julian_day_ut)
         _tithi_end_utc, tithi_end_local = service.from_julian_day_ut(tithi_end_jd, request.timezone)
+        _nakshatra_end_utc, nakshatra_end_local = service.from_julian_day_ut(
+            nakshatra_end_jd,
+            request.timezone,
+        )
+        _yoga_end_utc, yoga_end_local = service.from_julian_day_ut(yoga_end_jd, request.timezone)
+        _karana_end_utc, karana_end_local = service.from_julian_day_ut(
+            karana_end_jd,
+            request.timezone,
+        )
         new_moon_sun = service.get_sidereal_longitude(CelestialBody.SUN, previous_new_moon_jd)
         next_new_moon_sun = service.get_sidereal_longitude(CelestialBody.SUN, next_new_moon_jd)
         following_new_moon_sun_longitude = None
@@ -134,10 +162,16 @@ def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
         panchang=PanchangLimbsResponse(
             tithi=f"{calendrical.paksha} {panchang.tithi}",
             tithi_end_time=_format_clock_time(tithi_end_local),
+            next_tithi=get_next_tithi_with_paksha(tithi_index),
             vara=panchang.vara,
             nakshatra=panchang.nakshatra,
+            nakshatra_end_time=_format_clock_time(nakshatra_end_local),
             yoga=panchang.yoga,
+            yoga_end_time=_format_clock_time(yoga_end_local),
+            next_yoga=get_next_yoga_name(yoga_index),
             karana=panchang.karana,
+            karana_end_time=_format_clock_time(karana_end_local),
+            next_karana=get_next_karana_name(karana_index),
         ),
         calendrical=CalendricalResponse(
             samvatsara=calendrical.samvatsara,

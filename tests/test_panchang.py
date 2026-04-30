@@ -13,6 +13,10 @@ from app.services.panchang import (
     calculate_tithi_with_paksha,
     calculate_vara,
     calculate_yoga,
+    calculate_yoga_index,
+    get_next_karana_name,
+    get_next_tithi_with_paksha,
+    get_next_yoga_name,
 )
 
 
@@ -38,6 +42,17 @@ class PanchangCalculationTests(TestCase):
         )
         self.assertEqual(calculate_tithi_index(sun_longitude=350.0, moon_longitude=5.0), 2)
         self.assertEqual(calculate_yoga(sun_longitude=300.0, moon_longitude=80.0), "Priti")
+        self.assertEqual(calculate_yoga_index(sun_longitude=300.0, moon_longitude=80.0), 2)
+
+    def test_calculates_next_tithi_yoga_and_karana_names(self) -> None:
+        self.assertEqual(get_next_tithi_with_paksha(14), "Shukla Purnima")
+        self.assertEqual(get_next_tithi_with_paksha(15), "Krishna Pratipada")
+        self.assertEqual(get_next_tithi_with_paksha(30), "Shukla Pratipada")
+        self.assertEqual(get_next_yoga_name(26), "Vaidhriti")
+        self.assertEqual(get_next_yoga_name(27), "Vishkumbha")
+        self.assertEqual(get_next_karana_name(1), "Bava")
+        self.assertEqual(get_next_karana_name(57), "Shakuni")
+        self.assertEqual(get_next_karana_name(60), "Kimstughna")
 
     def test_maps_nakshatra_boundaries(self) -> None:
         self.assertEqual(calculate_nakshatra(0.0), "Ashwini")
