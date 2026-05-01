@@ -125,6 +125,12 @@ class CalendricalElements:
     ayana: str
 
 
+@dataclass(frozen=True)
+class MasaContext:
+    masa: str
+    is_adhika_masa: bool
+
+
 def calculate_calendrical_elements(
     civil_date: date,
     sunrise_jd_ut: float,
@@ -137,7 +143,7 @@ def calculate_calendrical_elements(
     following_new_moon_sun_longitude: float | None = None,
 ) -> CalendricalElements:
     paksha = calculate_paksha(tithi_index)
-    masa_new_moon_sun_longitude, is_adhika_masa = calculate_masa_context(
+    masa_context = calculate_masa_context(
         new_moon_sun_longitude=new_moon_sun_longitude,
         next_new_moon_sun_longitude=next_new_moon_sun_longitude,
         following_new_moon_sun_longitude=following_new_moon_sun_longitude,
@@ -147,8 +153,8 @@ def calculate_calendrical_elements(
 
     return CalendricalElements(
         samvatsara=calculate_samvatsara(civil_date, sunrise_jd_ut, chaitra_new_moon_jd_ut),
-        masa=calculate_masa(masa_new_moon_sun_longitude, paksha, "AMANTA", is_adhika_masa),
-        is_adhika_masa=is_adhika_masa,
+        masa=masa_context.masa,
+        is_adhika_masa=masa_context.is_adhika_masa,
         paksha=paksha,
         rutuvu=calculate_rutuvu(sun_longitude),
         ayana=calculate_ayana(sun_longitude),
@@ -178,21 +184,32 @@ def calculate_masa_context(
     following_new_moon_sun_longitude: float | None,
     paksha: str,
     month_convention: str | Enum,
-) -> tuple[float, bool]:
+) -> MasaContext:
     if _enum_value(month_convention) == "PURNIMANTA" and paksha == "Krishna":
         if following_new_moon_sun_longitude is None:
             raise ValueError(
                 "following_new_moon_sun_longitude is required for Purnimanta Krishna Paksha."
             )
 
-        return next_new_moon_sun_longitude, calculate_is_adhika_masa(
+        is_adhika_masa = calculate_is_adhika_masa(
             next_new_moon_sun_longitude,
             following_new_moon_sun_longitude,
         )
+        return MasaContext(
+            masa=calculate_masa_from_new_moon_sun_longitude(
+                next_new_moon_sun_longitude,
+                is_adhika_masa,
+            ),
+            is_adhika_masa=is_adhika_masa,
+        )
 
-    return new_moon_sun_longitude, calculate_is_adhika_masa(
+    is_adhika_masa = calculate_is_adhika_masa(
         new_moon_sun_longitude,
         next_new_moon_sun_longitude,
+    )
+    return MasaContext(
+        masa=calculate_masa(new_moon_sun_longitude, paksha, month_convention, is_adhika_masa),
+        is_adhika_masa=is_adhika_masa,
     )
 
 
@@ -208,6 +225,19 @@ def calculate_masa(
     if _enum_value(month_convention) == "PURNIMANTA" and paksha == "Krishna":
         masa_index = MASA_SEQUENCE.index(masa)
         masa = MASA_SEQUENCE[(masa_index + 1) % len(MASA_SEQUENCE)]
+
+    if is_adhika_masa:
+        return f"Adhika {masa}"
+
+    return masa
+
+
+def calculate_masa_from_new_moon_sun_longitude(
+    new_moon_sun_longitude: float,
+    is_adhika_masa: bool = False,
+) -> str:
+    sun_rasi_at_new_moon = calculate_rasi(new_moon_sun_longitude)
+    masa = MASA_BY_NEW_MOON_SUN_RASI[sun_rasi_at_new_moon]
 
     if is_adhika_masa:
         return f"Adhika {masa}"

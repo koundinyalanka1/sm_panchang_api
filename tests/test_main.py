@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from unittest import TestCase
 
-from app.main import _format_clock_time
+from app.main import _format_clock_time, app
 
 
 class MainFormattingTests(TestCase):
@@ -24,3 +24,13 @@ class MainFormattingTests(TestCase):
             _format_clock_time(datetime(2026, 5, 9, 23, 59, 45), date(2026, 5, 9)),
             "12:00 AM (Next Day)",
         )
+
+
+class RouteSecurityTests(TestCase):
+    def test_phase1_route_requires_same_api_key_security_as_panchang_route(self) -> None:
+        schema = app.openapi()
+        panchang_security = schema["paths"]["/api/v1/panchang"]["post"].get("security")
+        phase1_security = schema["paths"]["/api/v1/phase1/astronomy"]["post"].get("security")
+
+        self.assertEqual(phase1_security, panchang_security)
+        self.assertEqual(phase1_security, [{"APIKeyHeader": []}])

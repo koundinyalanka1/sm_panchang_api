@@ -71,6 +71,7 @@ def health() -> dict[str, str]:
     "/api/v1/phase1/astronomy",
     response_model=PanchangResponse,
     tags=["phase-1"],
+    dependencies=[Depends(get_api_key)],
 )
 def calculate_panchang(request: PanchangRequest) -> PanchangResponse:
     if request.preferences.ayanamsa != AyanamsaName.LAHIRI:

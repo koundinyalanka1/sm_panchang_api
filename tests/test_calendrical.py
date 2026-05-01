@@ -8,6 +8,7 @@ from app.services.calendrical import (
     calculate_calendrical_elements,
     calculate_is_adhika_masa,
     calculate_masa,
+    calculate_masa_context,
     calculate_paksha,
     calculate_rasi,
     calculate_rutuvu,
@@ -76,6 +77,18 @@ class CalendricalCalculationTests(TestCase):
         self.assertEqual(elements.masa, "Jyeshtha")
         self.assertFalse(elements.is_adhika_masa)
         self.assertEqual(elements.paksha, "Krishna")
+
+    def test_masa_context_returns_final_display_masa(self) -> None:
+        context = calculate_masa_context(
+            new_moon_sun_longitude=3.0,
+            next_new_moon_sun_longitude=34.0,
+            following_new_moon_sun_longitude=65.0,
+            paksha="Krishna",
+            month_convention="PURNIMANTA",
+        )
+
+        self.assertEqual(context.masa, "Jyeshtha")
+        self.assertFalse(context.is_adhika_masa)
 
     def test_calculates_purnimanta_krishna_adhika_status_from_next_lunation(self) -> None:
         elements_before_adhika_new_moon = calculate_calendrical_elements(
