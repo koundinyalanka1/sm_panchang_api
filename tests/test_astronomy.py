@@ -1,31 +1,31 @@
 from __future__ import annotations
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
 import swisseph as swe
 
-from app.services.astronomy import SwissEphemerisAstronomyService
+from app.services.astronomy import AstronomyCalculationError, SwissEphemerisAstronomyService, _discover_ephemeris_path
 
 
 class AstronomyServiceBackendTests(TestCase):
-    def test_prefers_swiss_ephemeris_when_data_files_are_available(self) -> None:
-        with patch(
-            "app.services.astronomy.swe.calc_ut",
-            return_value=((0.0, 0.0, 0.0, 0.0, 0.0, 0.0), swe.FLG_SWIEPH),
-        ):
-            service = SwissEphemerisAstronomyService(ephemeris_path="/tmp/ephe")
+    def test_uses_explicit_ephemeris_path_when_provided(self) -> None:
+        service = SwissEphemerisAstronomyService(ephemeris_path="/tmp/ephe")
 
         self.assertEqual(service.ephemeris_flag, swe.FLG_SWIEPH)
-        self.assertEqual(service.ephemeris_backend, "swiss")
+        self.assertEqual(service.ephemeris_path, "/tmp/ephe")
 
-    def test_falls_back_to_moshier_when_swiss_files_are_unavailable(self) -> None:
-        def calc_ut(_julian_day_ut: float, _body_id: int, requested_flag: int) -> tuple[tuple[float, ...], int]:
-            ret_flag = swe.FLG_MOSEPH if requested_flag == swe.FLG_MOSEPH else swe.FLG_MOSEPH
-            return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0), ret_flag
+    def test_auto_discovers_ephemeris_path_from_se1_files(self) -> None:
+        with TemporaryDirectory() as directory:
+            Path(directory, "semo_18.se1").write_bytes(b"x")
+            with patch("app.services.astronomy._PROJECT_ROOT", Path(directory)):
+                discovered = _discover_ephemeris_path()
+        self.assertEqual(discovered, directory)
 
-        with patch("app.services.astronomy.swe.calc_ut", side_effect=calc_ut):
-            service = SwissEphemerisAstronomyService()
-
-        self.assertEqual(service.ephemeris_flag, swe.FLG_MOSEPH)
-        self.assertEqual(service.ephemeris_backend, "moshier")
+    def test_raises_when_no_se1_files_found(self) -> None:
+        with TemporaryDirectory() as empty_dir:
+            with patch("app.services.astronomy._PROJECT_ROOT", Path(empty_dir)):
+                with self.assertRaises(AstronomyCalculationError):
+                    _discover_ephemeris_path()

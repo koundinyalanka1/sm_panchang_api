@@ -19,8 +19,7 @@ FROM python:3.11-slim
 
 # Keep Python container behavior production-friendly and point Swiss Ephemeris to bundled data.
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    SWISSEPH_EPHE_PATH=/app/ephe
+    PYTHONUNBUFFERED=1
 
 # Set the application working directory.
 WORKDIR /app

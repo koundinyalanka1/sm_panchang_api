@@ -1,17 +1,29 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Callable
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 class AstronomyCalculationError(RuntimeError):
     pass
+
+
+def _discover_ephemeris_path() -> str:
+    """Walk the project tree and return the first directory that contains a .se1 file."""
+    for se1_file in sorted(_PROJECT_ROOT.rglob("*.se1")):
+        return str(se1_file.parent)
+    raise AstronomyCalculationError(
+        f"No Swiss Ephemeris .se1 files found under {_PROJECT_ROOT}. "
+        "Place sepl_18.se1 and semo_18.se1 in an 'ephe/' directory at the project root."
+    )
 
 
 class CelestialBody(str, Enum):
@@ -56,14 +68,12 @@ class SwissEphemerisAstronomyService:
         atmospheric_pressure_mbar: float = 1013.25,
         temperature_celsius: float = 15.0,
     ) -> None:
-        self.ephemeris_path = ephemeris_path or os.getenv("SWISSEPH_EPHE_PATH")
+        self.ephemeris_path = ephemeris_path or _discover_ephemeris_path()
         self.atmospheric_pressure_mbar = atmospheric_pressure_mbar
         self.temperature_celsius = temperature_celsius
         self.ephemeris_flag = swe.FLG_SWIEPH
 
-        if self.ephemeris_path:
-            swe.set_ephe_path(self.ephemeris_path)
-
+        swe.set_ephe_path(self.ephemeris_path)
         swe.set_sid_mode(swe.SIDM_LAHIRI, 0.0, 0.0)
 
     def calculate_phase1(
