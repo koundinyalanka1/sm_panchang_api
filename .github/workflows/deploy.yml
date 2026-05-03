@@ -59,6 +59,7 @@ jobs:
           image: ${{ env.IMAGE }}:${{ github.sha }}
           env_vars: |
             PANCHANG_API_KEY=${{ secrets.PANCHANG_API_KEY }}
+            SWISSEPH_EPHE_PATH=/app/ephe
           flags: >-
             --allow-unauthenticated
             --service-account=panchang-api@stotramitra-8fad0.iam.gserviceaccount.com
