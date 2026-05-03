@@ -1,0 +1,25 @@
+# Virtual environment
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Test/lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local ephemeris files (downloaded at build time by Dockerfile)
+ephe/
+
+# Environment and secrets
+.env
+*.json
+
+# Git and CI metadata
+.git/
+.github/
+
+# Editor
+.vscode/
